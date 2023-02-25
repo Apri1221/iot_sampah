@@ -68,7 +68,7 @@ export default {
             }
         },
         connect() {
-            this.socket = new SockJS("http://localhost:8080/broker");
+            this.socket = new SockJS("https://sheltered-wave-88873.herokuapp.com/broker");
             this.stompClient = Stomp.over(this.socket);
             this.stompClient.connect({}, frame => {
                 this.connected = true;
