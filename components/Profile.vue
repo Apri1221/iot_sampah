@@ -16,12 +16,12 @@
                 </div>
                 <div class="relative flex flex-col justify-center min-w-screen sm:items-center sm:pt-0">
                     <!-- <div class="shadow-xl ring-1 ring-gray-400/10" style="width: 30rem;"> -->
-                    <p class="">Apriyanto JPL Tobing</p>
+                    <p class="">{{ dataUser.name }}</p>
                     <br>
                     <div class="flex content-end items-end">
                         <p class="mt-2 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">+{{ received_messages }}
                         </p>
-                        <p class="">(50)</p>
+                        <p class="">({{ dataUser.point }})</p>
                     </div>
 
                     <button type="submit" @click="redirectDashboard()"
@@ -48,7 +48,7 @@ import Stomp from "webstomp-client";
 
 export default {
     name: 'Profile',
-    props: ["clientId"],
+    props: ["clientId", "dataUser"],
     data() {
         return {
             received_messages: 0,
@@ -58,7 +58,11 @@ export default {
     },
     methods: {
         redirectDashboard() {
-            this.$router.push('/');
+            let dataTempUser = {...this.dataUser}
+            dataTempUser.point += this.received_messages;
+            this.$axios.$post('/api/users/update', dataTempUser).then(() => {
+                this.$router.push('/');
+            })
         },
         send() {
             console.log("Send message:" + this.send_message);
@@ -68,7 +72,7 @@ export default {
             }
         },
         connect() {
-            this.socket = new SockJS("https://sheltered-wave-88873.herokuapp.com/broker");
+            this.socket = new SockJS("http://localhost:8080/broker");
             this.stompClient = Stomp.over(this.socket);
             this.stompClient.connect({}, frame => {
                 this.connected = true;
@@ -98,6 +102,7 @@ export default {
     mounted() {
         // if (this.clientId != null) {
             this.disconnect()
+            console.log(this.dataUser)
             this.connect()
         // }
     }

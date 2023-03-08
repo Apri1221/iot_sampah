@@ -42,7 +42,7 @@ export default {
       // this.html5QrcodeScanner.clear();
       console.log(`Code matched = ${decodedText}`, decodedResult);
       this.html5QrCode.stop().then((ignore) => {
-        this.$router.push({name: 'profile', params: {foo: 1}})
+        this.$router.push({name: 'profile', query: { user: decodedText }})
       }).catch((err) => {
         // Stop failed, handle it.
       });
