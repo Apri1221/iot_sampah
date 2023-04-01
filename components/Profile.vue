@@ -19,7 +19,7 @@
                     <p class="">{{ dataUser.name }}</p>
                     <br>
                     <div class="flex content-end items-end">
-                        <p class="mt-2 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">+{{ received_messages }}
+                        <p class="mt-2 text-4xl font-bold tracking-tight sm:text-5xl" :class="{ 'text-gray-900': received_messages >= 0, 'text-red-700': received_messages < 0 }">{{ received_messages > 0 ? `+${received_messages}` : received_messages }}
                         </p>
                         <p class="">({{ dataUser.point }})</p>
                     </div>
@@ -32,6 +32,38 @@
                 </div>
                 <!-- <img src="https://tailwindui.com/img/component-images/dark-project-app-screenshot.png" alt="Product screenshot" class="w-[48rem] max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 lg:-ml-0" width="2432" height="1442" /> -->
             </div>
+            <transition name="fade">
+                <div v-if="isModalVisible">
+                    <div @click="onToggle" class="absolute bg-black opacity-70 inset-0 z-0"></div>
+                    <div class="w-full max-w-lg p-3 relative mx-auto my-auto rounded-xl shadow-lg bg-white">
+                        <div>
+                            <div class="text-center p-3 flex-auto justify-center leading-6">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                    class="w-16 h-16 flex items-center text-red-500 mx-auto" viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                <h2 class="text-2xl font-bold py-4">Ooopss!</h2>
+                                <p class="text-md text-gray-600 px-8">
+                                    Kamu terdeteksi melakukan tindak kecurangan!
+                                </p>
+                            </div>
+                            <div class="p-3 mt-2 text-center space-x-4 md:block">
+                                <!-- <button
+                                    class="mb-2 md:mb-0 bg-white px-5 py-2 text-sm shadow-sm font-medium tracking-wider border text-gray-600 rounded-md hover:shadow-lg hover:bg-gray-100">
+                                    Save
+                                </button> -->
+                                <button @click="onToggle"
+                                    class="mb-2 md:mb-0 bg-red-500 border border-red-500 px-5 py-2 text-sm shadow-sm font-medium tracking-wider text-white rounded-md hover:shadow-lg hover:bg-red-600">
+                                    Mengerti
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
         </div>
     </div>
 </template>
@@ -53,9 +85,17 @@ export default {
         return {
             received_messages: 0,
             send_message: null,
-            connected: false
+            connected: false,
+            isOpen: false
         };
     },
+
+    computed: {
+        isModalVisible() {
+            return this.isOpen;
+        }
+    },
+
     methods: {
         redirectDashboard() {
             let dataTempUser = {...this.dataUser}
@@ -72,15 +112,17 @@ export default {
             }
         },
         connect() {
-            this.socket = new SockJS("https://sheltered-wave-88873.herokuapp.com/broker");
+            this.socket = new SockJS("http://localhost:8080/broker");
             this.stompClient = Stomp.over(this.socket);
             this.stompClient.connect({}, frame => {
                 this.connected = true;
                 console.log('Connected: ' + frame + "\nClientId: " + this.clientId);
                 this.stompClient.subscribe("/topic/pushmessages/" + this.clientId, tick => {
                     console.log(tick, JSON.parse(tick.body));
+
                     // this.received_messages.push(JSON.parse(tick.body).text);
-                    this.received_messages += 1
+                    this.received_messages += Number(JSON.parse(tick.body).text);
+                    if (Number(JSON.parse(tick.body).text) < 0) this.isOpen = true;
                 });
             },
                 error => {
@@ -98,6 +140,9 @@ export default {
         tickleConnection() {
             this.connected ? this.disconnect() : this.connect();
         },
+        onToggle() {
+            this.isOpen = !this.isOpen;
+        }
     },
     mounted() {
         // if (this.clientId != null) {
@@ -112,5 +157,19 @@ export default {
 <style>
 .reader__scan_region video {
     width: 30rem !important;
+}
+
+#app {
+    font-family: Avenir, Helvetica, Arial, sans-serif;
+}
+
+.fade-enter,
+.fade-leave-to {
+    opacity: 0;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 500ms ease-out;
 }
 </style>
