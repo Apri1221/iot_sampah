@@ -20,7 +20,7 @@ export default {
     async mounted() {
       // this.clientId = await this.$axios.$get('/api/subscribe?topic=/node-jarak-r,/node-ir-r&school_id=1')
       this.dataUser = await this.$axios.$get('/api/users/' + this.$route.query.user)
-      this.clientId = await this.$axios.$get('/api/subscribe?school_id=' + this.dataUser.school.id)
+      this.clientId = await this.$axios.$get('/api/subscribe?school_id=' + this.dataUser.school.id + '&user_id=' + this.dataUser.id)
     }
 }
 </script>

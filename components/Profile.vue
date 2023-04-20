@@ -16,7 +16,8 @@
                 </div>
                 <div class="relative flex flex-col justify-center min-w-screen sm:items-center sm:pt-0">
                     <!-- <div class="shadow-xl ring-1 ring-gray-400/10" style="width: 30rem;"> -->
-                    <p class="">{{ dataUser.name }}</p>
+                    <p class="font-bold text-lg" style="margin-top: 20px;">{{ dataUser.name }}</p>
+                    <p class="text-sm mt-2">Saldo: {{ formatRupiah(dataUser.saldo, true) }}</p>
                     <br>
                     <div class="flex content-end items-end">
                         <p class="mt-2 text-4xl font-bold tracking-tight sm:text-5xl" :class="{ 'text-gray-900': received_messages >= 0, 'text-red-700': received_messages < 0 }">{{ received_messages > 0 ? `+${received_messages}` : received_messages }}
@@ -99,7 +100,7 @@ export default {
     methods: {
         redirectDashboard() {
             let dataTempUser = {...this.dataUser}
-            dataTempUser.point += this.received_messages;
+            dataTempUser.point = this.received_messages;
             this.$axios.$post('/api/users/update', dataTempUser).then(() => {
                 this.$router.push('/');
             })
@@ -120,6 +121,7 @@ export default {
                 this.stompClient.subscribe("/topic/pushmessages/" + this.clientId, tick => {
                     console.log(tick, JSON.parse(tick.body));
 
+                    if (this.isOpen) return;
                     // this.received_messages.push(JSON.parse(tick.body).text);
                     this.received_messages += Number(JSON.parse(tick.body).text);
                     if (Number(JSON.parse(tick.body).text) < 0) this.isOpen = true;
@@ -130,6 +132,24 @@ export default {
                     this.connected = false;
                 }
             );
+        },
+        formatRupiah(angka, prefix){
+            const str_angka = angka.toString();
+            let separator;
+            var number_string = str_angka.replace(/[^,\d]/g, '').toString(),
+            split   		= number_string.split(','),
+            sisa     		= split[0].length % 3,
+            rupiah     		= split[0].substr(0, sisa),
+            ribuan     		= split[0].substr(sisa).match(/\d{3}/gi);
+        
+            // tambahkan titik jika yang di input sudah menjadi angka ribuan
+            if(ribuan){
+                separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
+        
+            rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+            return prefix == undefined ? rupiah : (rupiah ? 'Rp. ' + rupiah : '');
         },
         disconnect() {
             if (this.stompClient) {
@@ -142,6 +162,7 @@ export default {
         },
         onToggle() {
             this.isOpen = !this.isOpen;
+            this.redirectDashboard();
         }
     },
     mounted() {
