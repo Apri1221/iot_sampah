@@ -74,7 +74,7 @@ export default {
           // this.received_messages.push(JSON.parse(tick.body).text);
           this.received_messages = "-" + (200 - Number(JSON.parse(tick.body).text)) + "%";
           // kalau 100% kosong
-          if (Number(JSON.parse(tick.body).text) > 70) this.bg_color = "#8ddbf5"
+          if (Number(JSON.parse(tick.body).text) > 60) this.bg_color = "#8ddbf5"
           else this.bg_color = "#f58d8d"
           // kalau kecil, penuh
         });
@@ -89,7 +89,9 @@ export default {
       if (this.stompClient) {
         this.stompClient.disconnect();
       }
-      await this.$axios.$get('/api/unsubscribe/' + localStorage.getItem("clientIdOld") + '?topic=/node-jarak-r') // Hardcode
+      if (localStorage.getItem("clientIdOld") != null) {
+        await this.$axios.$get('/api/unsubscribe/' + localStorage.getItem("clientIdOld") + '?topic=/node-jarak-r') // Hardcode
+      }
       this.connected = false;
     },
   },
@@ -125,7 +127,7 @@ export default {
   height: 200px;
   margin: 50px auto;
   position: relative;
-  background-color: #f58d8d;
+  background-color: v-bind(bg_color);
   box-shadow: inset 0 0 50px #1c637a;
   clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%);
 }
