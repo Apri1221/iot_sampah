@@ -114,7 +114,7 @@ export default {
       // called when a message arrives
       function onMessageArrived(message) {
         console.log('onMessageArrived:' + message.payloadString);
-        self.received_messages = "-" + (32 - Number(message.payloadString)) + "%";
+        self.received_messages = "-" + (200 - ((Number(message.payloadString) / 35) * 100)) + "%";
           // kalau 100% kosong
           if (Number(message.payloadString) > 60) self.bg_color = "#8ddbf5"
           else self.bg_color = "#f58d8d"
