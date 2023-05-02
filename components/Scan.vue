@@ -31,17 +31,26 @@ import { Html5Qrcode } from "html5-qrcode"
 import SockJS from "sockjs-client";
 import Stomp from "webstomp-client";
 
+import Paho from 'paho-mqtt'
+
+var client;
+
 
 export default {
   name: 'Scan',
-  props: ["clientId"],
+  // props: ["clientId"],
   data() {
     return {
       html5QrcodeScanner: null,
       html5QrCode: null,
       color: "-120%",
       received_messages: "-100%",
-      bg_color: "#8ddbf5"
+      bg_color: "#8ddbf5",
+      mqtt_server: 'tailor.cloudmqtt.com',
+      mqtt_port: 36503,
+      publish_topic: '/breez_test/message',
+      subscribe_topic: '/node-jarak-r',
+      publish_message: 'Web client: Hello World!'
     };
   },
   methods: {
@@ -61,42 +70,61 @@ export default {
       // for example:
       console.warn(`Code scan error = ${error}`);
     },
-    connect() {
-      this.socket = new SockJS("https://sheltered-wave-88873.herokuapp.com/broker");
-      this.stompClient = Stomp.over(this.socket);
-      this.stompClient.connect({}, frame => {
-        this.connected = true;
-        console.log('Connected: ' + frame + "\nClientId: " + this.clientId);
-        localStorage.setItem("clientIdOld", this.clientId)
-
-        this.stompClient.subscribe("/topic/bucket/" + this.clientId, tick => {
-          console.log(tick, JSON.parse(tick.body));
-          // this.received_messages.push(JSON.parse(tick.body).text);
-          this.received_messages = "-" + (200 - Number(JSON.parse(tick.body).text)) + "%";
-          // kalau 100% kosong
-          if (Number(JSON.parse(tick.body).text) > 60) this.bg_color = "#8ddbf5"
-          else this.bg_color = "#f58d8d"
-          // kalau kecil, penuh
-        });
-      },
-        error => {
-          console.log(error);
-          this.connected = false;
-        }
+    connect: function initClient() {
+      let self = this;
+      // Create a client instance
+      let client_id =
+        'breez-web-demo-' + Math.floor(Math.random() * 8999 + 1000);
+      client = new Paho.Client(
+        self.mqtt_server,
+        self.mqtt_port,
+        client_id
       );
+
+      let willMessage = new Paho.Message(
+        'Web Client - Disconnected ungracefully'
+      );
+      willMessage.destinationName = self.publish_topic;
+
+      client.connect({
+        onSuccess: () => {
+          client.subscribe(self.subscribe_topic);
+
+          let message = new Paho.Message('Web client connected!');
+          message.destinationName = self.publish_topic;
+          client.send(message);
+        },
+        useSSL: true,
+        userName: "lvntsnrq",
+        password: "79W8iNWE4G9i",
+        willMessage: willMessage,
+      });
+
+      // set callback handlers
+      client.onConnectionLost = onConnectionLost;
+      client.onMessageArrived = onMessageArrived;
+
+      // called when the client loses its connection
+      function onConnectionLost(responseObject) {
+        if (responseObject.errorCode !== 0) {
+          console.log('onConnectionLost:' + responseObject.errorMessage);
+        }
+      }
+
+      // called when a message arrives
+      function onMessageArrived(message) {
+        console.log('onMessageArrived:' + message.payloadString);
+        self.received_messages = "-" + (200 - Number(message.payloadString)) + "%";
+          // kalau 100% kosong
+          if (Number(message.payloadString) > 60) self.bg_color = "#8ddbf5"
+          else self.bg_color = "#f58d8d"
+      }
     },
-    async disconnect() {
-      if (this.stompClient) {
-        this.stompClient.disconnect();
-      }
-      if (localStorage.getItem("clientIdOld") != null) {
-        await this.$axios.$get('/api/unsubscribe/' + localStorage.getItem("clientIdOld") + '?topic=/node-jarak-r') // Hardcode
-      }
-      this.connected = false;
+    disconnect: function () {
+      client.disconnect();
     },
   },
   mounted() {
-    this.disconnect()
     this.connect()
     // this.html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: 250 }, /* verbose= */ false);
     // this.html5QrcodeScanner.render(this.onScanSuccess, this.onScanFailure);
@@ -122,6 +150,7 @@ export default {
   width: 30rem !important;
 }
 
+/* https://codepen.io/Alhefel/pen/wvEXExL */
 .water {
   width: 200px;
   height: 200px;

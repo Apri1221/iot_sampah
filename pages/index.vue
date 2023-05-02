@@ -1,7 +1,7 @@
 <template>
-  <div v-if="clientId != null">
+  <!-- <div v-if="clientId != null"> -->
     <Scan :clientId="clientId"/>
-  </div>
+  <!-- </div> -->
 </template>
 
 <script>
@@ -16,7 +16,7 @@ export default {
       }
     },
     async mounted() {
-      this.clientId = await this.$axios.$get('/api/subscribe?topic=/node-jarak-r') // Hardcode
+      // this.clientId = await this.$axios.$get('/api/subscribe?topic=/node-jarak-r') // Hardcode
     }
 }
 </script>
